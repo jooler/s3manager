@@ -6,20 +6,29 @@
   import { RefreshCw, Download, Trash2, Copy } from "lucide-svelte";
   import { onMount } from "svelte";
 
-  let files: S3Object[] = [];
-  let multipartUploads: MultipartUpload[] = [];
-  let loading = false;
-  let error: string | null = null;
-  let currentPage = 1;
-  let pageSize = 10;
-  let totalCount = 0;
-  let continuationToken: string | undefined;
-  let nextContinuationToken: string | undefined;
+  let files: S3Object[] = $state([]);
+  let multipartUploads: MultipartUpload[] = $state([]);
+  let loading = $state(false);
+  let error: string | null = $state(null);
+  let currentPage = $state(1);
+  let pageSize = $state(10);
+  let totalCount = $state(0);
+  let continuationToken: string | undefined = $state();
+  let nextContinuationToken: string | undefined = $state();
 
   const pageSizeOptions = [10, 50, 100];
 
   onMount(() => {
     loadData();
+  });
+
+  $effect(() => {
+    // 当激活的存储桶改变时，重新加载数据
+    if (globalState.activeSelectedBucketId) {
+      currentPage = 1;
+      continuationToken = undefined;
+      loadData();
+    }
   });
 
   async function loadData() {
@@ -265,12 +274,22 @@
     <!-- Main Content Area (Flexible Height) -->
     <div class="flex flex-1 flex-col gap-4 overflow-hidden">
       <!-- Files Section -->
-      <div class="flex flex-1 flex-col gap-4 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-        {#if files.length === 0}
+      <div class="relative flex flex-1 flex-col gap-4 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+        {#if loading}
+          <!-- Loading Overlay -->
+          <div class="absolute inset-0 z-10 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+            <div class="flex flex-col items-center gap-3">
+              <div class="h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-blue-500 dark:border-slate-600 dark:border-t-blue-400"></div>
+              <p class="text-sm text-slate-600 dark:text-slate-400">{t().common.loading}</p>
+            </div>
+          </div>
+        {/if}
+
+        {#if files.length === 0 && !loading}
           <div class="flex flex-1 items-center justify-center p-4 text-center text-slate-500 dark:text-slate-400">
             {t().manage.files.noFiles}
           </div>
-        {:else}
+        {:else if files.length > 0}
           <div class="flex flex-1 flex-col overflow-hidden">
             <!-- Table Header (Fixed) -->
             <table class="w-full text-sm flex-shrink-0">

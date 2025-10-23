@@ -2,7 +2,7 @@
   import AddBucket from "$lib/components/AddBucket.svelte";
   import db from "$lib/db";
   import { t } from "$lib/i18n.svelte";
-  import { globalState } from "$lib/store.svelte";
+  import { globalState, refreshBuckets } from "$lib/store.svelte";
   import type { Bucket } from "$lib/type";
   import { Select } from "bits-ui";
   import { ChevronsUpDown } from "lucide-svelte";
@@ -24,12 +24,14 @@
 
   async function setDefaultBucket(id: number) {
     globalState.appSetting.defaultBucketId = id;
+    refreshBuckets();
   }
 
   async function deleteBucket(id: number) {
     await db.buckets.delete(id);
     buckets = await db.buckets.toArray();
     checkDefaultBucket();
+    refreshBuckets();
   }
 
   async function onAddBucketClose() {
@@ -38,6 +40,7 @@
     if (buckets.length === 1 && !globalState.appSetting.defaultBucketId) {
       await setDefaultBucket(buckets[0].id!);
     }
+    refreshBuckets();
   }
 
   function checkDefaultBucket() {

@@ -75,7 +75,7 @@
 <Alert />
 <Modal />
 
-<div class="flex h-full bg-slate-50 dark:bg-slate-900">
+<div class="flex h-full bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
   <Sidebar />
   <main class="flex flex-1 flex-col overflow-hidden pb-18 md:pb-0">
     <TabNavigation />

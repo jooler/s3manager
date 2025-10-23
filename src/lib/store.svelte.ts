@@ -16,13 +16,16 @@ export let globalState: GlobalState = $state({
   },
   files: [],
   selectedBucket: undefined,
+  activeSelectedBucketId: undefined,
   appSetting: {
     sidebarCollapsed: false,
     useSystemProxy: true,
     locale: "en",
     defaultBucketId: undefined,
+    lastActiveBucketId: undefined,
   },
   progress: {},
+  bucketsRefreshSignal: 0,
 });
 
 export function setAlert(message: string) {
@@ -44,6 +47,10 @@ export function setIsDragging(isDragging: boolean) {
 
 export function setDragPaths(paths: string[]) {
   globalState.drag.paths = paths;
+}
+
+export function refreshBuckets() {
+  globalState.bucketsRefreshSignal++;
 }
 
 // initialize app settings from database

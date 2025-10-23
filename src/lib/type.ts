@@ -55,8 +55,10 @@ export interface GlobalState {
   modal: ModalState;
   files: Array<File>;
   selectedBucket: Selected<Bucket> | undefined;
+  activeSelectedBucketId: number | undefined;
   appSetting: AppSettings;
   progress: Record<string, UploadHistory>;
+  bucketsRefreshSignal: number;
 }
 
 export interface AppSettings {
@@ -65,6 +67,7 @@ export interface AppSettings {
   useSystemProxy: boolean;
   locale: string;
   defaultBucketId: number | undefined;
+  lastActiveBucketId: number | undefined;
 }
 
 export interface ModalState {

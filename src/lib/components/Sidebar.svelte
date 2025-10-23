@@ -2,11 +2,8 @@
   import { page } from "$app/state";
   import { t } from "$lib/i18n.svelte";
   import { globalState } from "$lib/store.svelte";
-  import {
-    PanelRightClose,
-    PanelRightOpen,
-    Settings,
-  } from "lucide-svelte";
+  import BucketList from "./BucketList.svelte";
+  import { Settings } from "lucide-svelte";
 
   const links = $derived([
     { href: "/setting", icon: Settings, label: t().common.setting },
@@ -18,51 +15,36 @@
 
 {#snippet Desktop()}
   <nav
-    class="hidden min-h-dvh border-r border-slate-200 bg-white transition-all md:block dark:border-slate-700 dark:bg-slate-800 {globalState
+    class="hidden min-h-dvh bg-white transition-all md:flex md:flex-col dark:border-slate-700 dark:bg-slate-800 {globalState
       .appSetting.sidebarCollapsed
       ? 'w-16'
       : 'w-40'}"
   >
-    <ul class="flex flex-col items-center space-y-2">
-      <li
-        class="flex w-full {globalState.appSetting.sidebarCollapsed
-          ? 'justify-center'
-          : 'justify-end'}"
-      >
-        <button
-          onclick={() =>
-            (globalState.appSetting.sidebarCollapsed =
-              !globalState.appSetting.sidebarCollapsed)}
-          class="nav-link gapped"
-          aria-label={globalState.appSetting.sidebarCollapsed
-            ? t().common.expand
-            : t().common.collapse}
-        >
-          {#if globalState.appSetting.sidebarCollapsed}
-            <PanelRightClose class="size-5" />
-          {:else}
-            <PanelRightOpen class="size-5" />
-          {/if}
-        </button>
-      </li>
+    <!-- Top Section: Bucket List Header -->
+
+    <!-- Scrollable Bucket List -->
+    <div class="flex-1 overflow-y-auto {globalState.appSetting.sidebarCollapsed ? 'flex flex-col items-center px-1 py-2' : 'px-2 py-2'}">
+      <BucketList />
+    </div>
+
+    <!-- Bottom Section: Settings -->
+    <div class="border-t border-slate-200 p-2 dark:border-slate-700">
       {#each links as { href, icon: Icon, label }}
-        <li class="w-full px-2">
-          <a
-            {href}
-            class="nav-link gapped bg {globalState.appSetting.sidebarCollapsed
-              ? '-mx-2 rounded-none'
-              : 'rounded-lg'}"
-            class:min-w-28={!globalState.appSetting.sidebarCollapsed}
-            aria-current={page.route.id === href ? "page" : null}
-          >
-            <Icon class="size-5" />
-            {#if !globalState.appSetting.sidebarCollapsed}
-              <span class="text-nowrap">{label}</span>
-            {/if}
-          </a>
-        </li>
+        <a
+          {href}
+          class="nav-link gapped bg {globalState.appSetting.sidebarCollapsed
+            ? '-mx-2 rounded-none'
+            : 'rounded-lg'}"
+          class:min-w-28={!globalState.appSetting.sidebarCollapsed}
+          aria-current={page.route.id === href ? "page" : null}
+        >
+          <Icon class="size-5" />
+          {#if !globalState.appSetting.sidebarCollapsed}
+            <span class="text-nowrap">{label}</span>
+          {/if}
+        </a>
       {/each}
-    </ul>
+    </div>
   </nav>
 {/snippet}
 
@@ -71,6 +53,11 @@
     <nav
       class="flex items-center justify-around border-t border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-700"
     >
+      <div class="flex-1 overflow-x-auto">
+        <div class="flex gap-2">
+          <BucketList />
+        </div>
+      </div>
       {#each links as { href, icon: Icon, label }}
         <a
           {href}

@@ -4,6 +4,7 @@
   import {
     closeModal,
     globalState,
+    refreshBuckets,
     setAlert,
     showModal,
   } from "$lib/store.svelte";
@@ -133,6 +134,7 @@
       ...bucket,
     });
 
+    refreshBuckets();
     closeModal();
   }
 
