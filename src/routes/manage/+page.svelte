@@ -3,8 +3,9 @@
   import { globalState, setAlert } from "$lib/store.svelte";
   import type { S3Object, MultipartUpload } from "$lib/type";
   import { invoke } from "@tauri-apps/api/core";
-  import { RefreshCw, Download, Trash2, Copy, Eye } from "lucide-svelte";
+  import { RefreshCw, Download, Trash2, Copy, Eye, Play } from "lucide-svelte";
   import ImagePreview from "$lib/components/ImagePreview.svelte";
+  import VideoPreview from "$lib/components/VideoPreview.svelte";
   import { generateOSSPresignedUrl, isOSSBucket } from "$lib/oss-client";
 
   let files: S3Object[] = $state([]);
@@ -19,6 +20,8 @@
   let continuationTokenHistory: (string | undefined)[] = $state([]); // 记录每一页的 token
   let previewImageUrl: string | null = $state(null);
   let previewFileName: string | null = $state(null);
+  let previewVideoUrl: string | null = $state(null);
+  let previewVideoFileName: string | null = $state(null);
   let lastLoadedBucketId: number | undefined = $state(undefined);
 
   const pageSizeOptions = [25, 50, 100, 200, 500];
@@ -271,6 +274,24 @@
     return imageExtensions.some((ext) => lowerKey.endsWith(ext));
   }
 
+  function isVideoFile(key: string): boolean {
+    const videoExtensions = [
+      ".mp4",
+      ".webm",
+      ".ogg",
+      ".ogv",
+      ".avi",
+      ".mov",
+      ".wmv",
+      ".flv",
+      ".mkv",
+      ".m4v",
+      ".3gp",
+    ];
+    const lowerKey = key.toLowerCase();
+    return videoExtensions.some((ext) => lowerKey.endsWith(ext));
+  }
+
   async function previewImage(key: string) {
     try {
       const bucket = globalState.selectedBucket?.value;
@@ -314,6 +335,53 @@
     } catch (e) {
       console.error("Error previewing image:", e);
       const errorMsg = e instanceof Error ? e.message : "Failed to preview image";
+      setAlert(errorMsg);
+    }
+  }
+
+  async function previewVideo(key: string) {
+    try {
+      const bucket = globalState.selectedBucket?.value;
+      if (!bucket) {
+        console.error("No bucket selected");
+        return;
+      }
+
+      console.log("Previewing video:", {
+        key,
+        bucketName: bucket.bucketName,
+        endpoint: bucket.endpoint,
+        isOSS: isOSSBucket(bucket),
+      });
+
+      let presignedUrl: string;
+
+      // 判断是 OSS 还是 R2
+      if (isOSSBucket(bucket)) {
+        // 使用 OSS SDK 生成预签名 URL
+        console.log("Using OSS SDK to generate presigned URL");
+        presignedUrl = await generateOSSPresignedUrl(bucket, key, 3600);
+      } else {
+        // 使用后端 Tauri 命令生成 R2 预签名 URL
+        console.log("Using Tauri backend to generate R2 presigned URL");
+        presignedUrl = await invoke<string>("r2_get_presigned_url", {
+          bucketName: bucket.bucketName,
+          accountId: bucket.accountId,
+          accessKey: bucket.accessKey,
+          secretKey: bucket.secretKey,
+          key,
+          endpoint: bucket.endpoint || undefined,
+          expiresIn: 3600, // 1 小时
+        });
+      }
+
+      console.log("Generated presigned URL:", presignedUrl);
+
+      previewVideoUrl = presignedUrl;
+      previewVideoFileName = key;
+    } catch (e) {
+      console.error("Error previewing video:", e);
+      const errorMsg = e instanceof Error ? e.message : "Failed to preview video";
       setAlert(errorMsg);
     }
   }
@@ -372,6 +440,15 @@
                               class="text-purple-500 hover:text-purple-700"
                             >
                               <Eye size={16} />
+                            </button>
+                          {/if}
+                          {#if isVideoFile(file.key)}
+                            <button
+                              onclick={() => previewVideo(file.key)}
+                              title="预览视频"
+                              class="text-green-600 hover:text-green-800"
+                            >
+                              <Play size={16} />
                             </button>
                           {/if}
                           <button
@@ -527,6 +604,17 @@
     onClose={() => {
       previewImageUrl = null;
       previewFileName = null;
+    }}
+  />
+{/if}
+
+{#if previewVideoUrl && previewVideoFileName}
+  <VideoPreview
+    imageUrl={previewVideoUrl}
+    fileName={previewVideoFileName}
+    onClose={() => {
+      previewVideoUrl = null;
+      previewVideoFileName = null;
     }}
   />
 {/if}
