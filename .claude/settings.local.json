@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(copy:*)",
+      "Bash(powershell:*)",
+      "Bash(bun tauri dev:*)",
+      "Bash(where:*)",
+      "Bash(npm install:*)",
+      "Bash(node generate-ico:*)",
+      "Bash(del:*)",
+      "Bash(git add:*)",
+      "Bash(rm:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "name": "r2uploader",
+  "version": "0.1.1",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "tauri": "tauri",
+    "format": "prettier --write ./src",
+    "backup": "mkdir -p backup && cp ./src-tauri/gen/android/app/build.gradle.kts ./backup/ && cp ./src-tauri/gen/android/app/src/main/AndroidManifest.xml ./backup/",
+    "restore": "mkdir -p ./src-tauri/gen/android/app/src/main/java/cn/zerorust/r2uploader && cp ./backup/build.gradle.kts ./src-tauri/gen/android/app/ && cp ./backup/AndroidManifest.xml ./src-tauri/gen/android/app/src/main/ && if [ ! -f ./src-tauri/gen/android/keystore.properties ]; then echo -e 'password=\\nkeyAlias=upload\\nstoreFile=/home/vihv/upload-keystore.jks' > ./src-tauri/gen/android/keystore.properties; fi",
+    "restore-win": "powershell -ExecutionPolicy Bypass -File ./restore.ps1"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@tailwindcss/typography": "^0.5.16",
+    "@tauri-apps/api": "^2.3.0",
+    "@tauri-apps/plugin-dialog": "~2.2.0",
+    "@tauri-apps/plugin-opener": "^2.2.6",
+    "@tauri-apps/plugin-os": "~2.2.0",
+    "@types/canvas-confetti": "^1.9.0",
+    "canvas-confetti": "^1.9.3",
+    "dexie": "^4.0.11",
+    "dompurify": "^3.2.4",
+    "marked": "^15.0.7",
+    "png-to-ico": "^3.0.1",
+    "tauri-plugin-clipboard-api": "^2.1.11"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-static": "^3.0.8",
+    "@sveltejs/kit": "^2.18.0",
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "@tailwindcss/vite": "^4.0.9",
+    "@tauri-apps/cli": "^2.3.1",
+    "@types/marked": "^6.0.0",
+    "bits-ui": "0.21.10",
+    "daisyui": "^5.0.0",
+    "lucide-svelte": "^0.471.0",
+    "prettier": "^3.5.3",
+    "prettier-plugin-svelte": "^3.3.3",
+    "prettier-plugin-tailwindcss": "^0.6.11",
+    "svelte": "^5.22.3",
+    "svelte-check": "^4.1.4",
+    "svelte-dnd-action": "^0.9.57",
+    "tailwindcss": "^4.0.9",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.0"
+  }
+}

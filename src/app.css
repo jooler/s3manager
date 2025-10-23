@@ -1,0 +1,94 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@plugin "daisyui" {
+  include: modal, toggle;
+}
+
+html {
+  @apply bg-slate-50 dark:bg-slate-900;
+  scroll-behavior: smooth;
+  scrollbar-gutter: auto !important;
+}
+
+html,
+body {
+  overflow: hidden; /* 禁止页面滚动 */
+  height: 100%; /* 确保 body 和 html 占满视口 */
+  margin: 0; /* 去除默认边距 */
+  overscroll-behavior: none;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  -webkit-appearance: none;
+}
+
+:root {
+  color-scheme: dark light;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-100 dark:bg-slate-800;
+  background-color: #1e293b;
+  /* slate-800 */
+}
+
+::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-slate-300 dark:bg-slate-600;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  background-color: #475569;
+  /* slate-600 */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400 dark:bg-slate-500;
+}
+
+.button {
+  @apply cursor-pointer rounded-lg px-4 py-2 hover:bg-cyan-50 dark:hover:bg-slate-700;
+}
+
+.button-primary {
+  @apply text-cyan-500;
+}
+
+.button-danger {
+  @apply text-rose-500;
+}
+
+/* Bits UI Select 样式 */
+.select-trigger {
+  @apply flex min-w-32 cursor-pointer items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-1 text-slate-700 transition-colors hover:border-cyan-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200;
+}
+
+.select-trigger[disabled] {
+  @apply cursor-not-allowed bg-slate-100 text-slate-400 hover:border-slate-200 dark:bg-slate-800 dark:text-slate-500;
+}
+
+.select-content {
+  @apply mt-1 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-600 dark:bg-slate-700;
+}
+
+.select-item {
+  @apply cursor-pointer px-4 py-1 text-slate-700 outline-none hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-600;
+}
+
+.select-item[data-highlighted] {
+  @apply bg-cyan-50 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400;
+}
+
+/* 隐藏滚动条但保留功能 */
+.scrollbar-hide {
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari and Opera */
+}
