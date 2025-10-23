@@ -27,6 +27,7 @@
     "dexie": "^4.0.11",
     "dompurify": "^3.2.4",
     "marked": "^15.0.7",
+    "photoswipe": "^5.4.4",
     "png-to-ico": "^3.0.1",
     "tauri-plugin-clipboard-api": "^2.1.11"
   },

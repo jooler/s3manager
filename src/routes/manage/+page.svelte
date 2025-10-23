@@ -3,8 +3,8 @@
   import { globalState, setAlert } from "$lib/store.svelte";
   import type { S3Object, MultipartUpload } from "$lib/type";
   import { invoke } from "@tauri-apps/api/core";
-  import { RefreshCw, Download, Trash2, Copy } from "lucide-svelte";
-  import { onMount } from "svelte";
+  import { RefreshCw, Download, Trash2, Copy, Eye } from "lucide-svelte";
+  import ImagePreview from "$lib/components/ImagePreview.svelte";
 
   let files: S3Object[] = $state([]);
   let multipartUploads: MultipartUpload[] = $state([]);
@@ -15,18 +15,49 @@
   let totalCount = $state(0);
   let continuationToken: string | undefined = $state();
   let nextContinuationToken: string | undefined = $state();
+  let previewImageUrl: string | null = $state(null);
+  let previewFileName: string | null = $state(null);
+  let lastLoadedBucketId: number | undefined = $state(undefined);
 
   const pageSizeOptions = [10, 50, 100];
 
-  onMount(() => {
-    loadData();
-  });
-
   $effect(() => {
     // 当激活的存储桶改变时，重新加载数据
-    if (globalState.activeSelectedBucketId) {
+    // 使用 lastLoadedBucketId 避免重复加载
+    console.log("$effect triggered:", {
+      activeSelectedBucketId: globalState.activeSelectedBucketId,
+      selectedBucket: globalState.selectedBucket?.value.bucketName,
+      lastLoadedBucketId,
+      willLoad: globalState.activeSelectedBucketId &&
+                globalState.selectedBucket &&
+                globalState.activeSelectedBucketId !== lastLoadedBucketId,
+    });
+
+    if (
+      globalState.activeSelectedBucketId &&
+      globalState.selectedBucket &&
+      globalState.activeSelectedBucketId !== lastLoadedBucketId
+    ) {
+      console.log("✅ Bucket changed, loading data for:", {
+        bucketId: globalState.activeSelectedBucketId,
+        bucketName: globalState.selectedBucket.value.bucketName,
+        previousBucketId: lastLoadedBucketId,
+      });
+
+      // 先清空数据
+      files = [];
+      multipartUploads = [];
+      totalCount = 0;
+
+      // 重置分页
       currentPage = 1;
       continuationToken = undefined;
+      nextContinuationToken = undefined;
+
+      // 记录当前加载的存储桶 ID
+      lastLoadedBucketId = globalState.activeSelectedBucketId;
+
+      // 加载数据
       loadData();
     }
   });
@@ -37,12 +68,28 @@
       return;
     }
 
+    // 防止重复加载
+    if (loading) {
+      console.log("Already loading, skipping duplicate request");
+      return;
+    }
+
     loading = true;
     error = null;
 
     try {
       const bucket = globalState.selectedBucket.value;
-      
+
+      console.log("Loading data for bucket:", {
+        bucketId: bucket.id,
+        bucketName: bucket.bucketName,
+        endpoint: bucket.endpoint,
+        isOSS: bucket.endpoint?.includes("aliyuncs.com"),
+        currentPage,
+        pageSize,
+        stackTrace: new Error().stack?.split('\n').slice(2, 4).join('\n'), // 显示调用栈
+      });
+
       // Load files
       const filesResponse = await invoke("r2_list_objects", {
         bucketName: bucket.bucketName,
@@ -190,6 +237,59 @@
     continuationToken = undefined;
     loadData();
   }
+
+  function isImageFile(key: string): boolean {
+    const imageExtensions = [
+      ".jpg",
+      ".jpeg",
+      ".png",
+      ".gif",
+      ".webp",
+      ".svg",
+      ".bmp",
+      ".ico",
+      ".tiff",
+    ];
+    const lowerKey = key.toLowerCase();
+    return imageExtensions.some((ext) => lowerKey.endsWith(ext));
+  }
+
+  async function previewImage(key: string) {
+    try {
+      const bucket = globalState.selectedBucket?.value;
+      if (!bucket) {
+        console.error("No bucket selected");
+        return;
+      }
+
+      console.log("Previewing image:", {
+        key,
+        bucketName: bucket.bucketName,
+        endpoint: bucket.endpoint,
+        isOSS: bucket.endpoint?.includes("aliyuncs.com"),
+      });
+
+      // 获取预签名 URL（有效期 1 小时）
+      const presignedUrl = await invoke<string>("r2_get_presigned_url", {
+        bucketName: bucket.bucketName,
+        accountId: bucket.accountId,
+        accessKey: bucket.accessKey,
+        secretKey: bucket.secretKey,
+        key,
+        endpoint: bucket.endpoint || undefined,
+        expiresIn: 3600, // 1 小时
+      });
+
+      console.log("Generated presigned URL:", presignedUrl);
+
+      previewImageUrl = presignedUrl;
+      previewFileName = key;
+    } catch (e) {
+      console.error("Error previewing image:", e);
+      const errorMsg = e instanceof Error ? e.message : "Failed to preview image";
+      setAlert(errorMsg);
+    }
+  }
 </script>
 
 <div class="flex h-full flex-col p-4 gap-4">
@@ -318,6 +418,15 @@
                       <td class="px-4 py-2">{formatDate(file.lastModified)}</td>
                       <td class="px-4 py-2 text-right">
                         <div class="flex justify-end gap-2">
+                          {#if isImageFile(file.key)}
+                            <button
+                              onclick={() => previewImage(file.key)}
+                              title={t().manage.files.preview}
+                              class="text-purple-500 hover:text-purple-700"
+                            >
+                              <Eye size={16} />
+                            </button>
+                          {/if}
                           <button
                             onclick={() => copyUrl(file.key)}
                             title={t().manage.files.copyUrl}
@@ -376,3 +485,13 @@
   {/if}
 </div>
 
+{#if previewImageUrl && previewFileName}
+  <ImagePreview
+    imageUrl={previewImageUrl}
+    fileName={previewFileName}
+    onClose={() => {
+      previewImageUrl = null;
+      previewFileName = null;
+    }}
+  />
+{/if}

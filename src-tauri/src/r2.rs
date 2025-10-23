@@ -22,6 +22,9 @@ use std::{
 use tauri::{AppHandle, Emitter};
 use tokio::io::AsyncReadExt;
 use tokio::sync::Semaphore;
+use hmac::{Hmac, Mac};
+use sha2::{Digest, Sha256};
+use chrono::Utc;
 
 // 键是 file_id，值是一个元组，包含一个 JoinHandle 和一个 Option<String>，用于存储 upload_id，upload_id 用于分段上传
 static UPLOAD_TASKS: Lazy<
@@ -227,11 +230,29 @@ pub async fn r2_abort_multipart_upload_cmd(
     client.abort_multipart_upload(key, upload_id).await
 }
 
+#[tauri::command]
+pub async fn r2_get_presigned_url(
+    bucket_name: &str,
+    account_id: &str,
+    access_key: &str,
+    secret_key: &str,
+    key: &str,
+    endpoint: Option<&str>,
+    expires_in: Option<u64>,
+) -> Result<String, String> {
+    let client = R2Client::new_with_endpoint(bucket_name, account_id, access_key, secret_key, None, endpoint).await?;
+    client.get_presigned_url(key, expires_in.unwrap_or(3600)).await
+}
+
 #[derive(Clone)]
 pub struct R2Client {
     client: Client,
     bucket_name: String,
     domain: String,
+    endpoint: Option<String>,
+    access_key: String,
+    secret_key: String,
+    account_id: String,
 }
 
 impl R2Client {
@@ -290,6 +311,10 @@ impl R2Client {
             client: Client::new(&config),
             bucket_name: bucket_name.to_string(),
             domain: domain.unwrap_or("").to_string(),
+            endpoint: endpoint.map(|s| s.to_string()),
+            access_key: access_key.to_string(),
+            secret_key: secret_key.to_string(),
+            account_id: account_id.to_string(),
         })
     }
 
@@ -642,6 +667,152 @@ impl R2Client {
             .await
             .map_err(|e| e.to_string())?;
         Ok(())
+    }
+
+    // 生成 OSS 预签名 URL（使用 OSS V4 签名）
+    fn generate_oss_presigned_url(
+        &self,
+        key: &str,
+        expires_in: u64,
+    ) -> Result<String, String> {
+        let endpoint = self.endpoint.as_ref().ok_or("Endpoint is required for OSS")?;
+
+        // 移除协议前缀
+        let endpoint_host = endpoint
+            .trim_start_matches("https://")
+            .trim_start_matches("http://");
+
+        // 从 endpoint 中提取 region，例如从 "oss-cn-shanghai.aliyuncs.com" 提取 "cn-shanghai"
+        let region = if let Some(region_part) = endpoint_host.split('.').next() {
+            if region_part.starts_with("oss-") {
+                region_part.trim_start_matches("oss-")
+            } else {
+                "auto"
+            }
+        } else {
+            "auto"
+        };
+
+        // 获取当前时间
+        let now = Utc::now();
+        let date_stamp = now.format("%Y%m%d").to_string();
+        let date_time = now.format("%Y%m%dT%H%M%SZ").to_string();
+
+        // 构建 credential
+        let credential = format!(
+            "{}/{}/{}/oss/aliyun_v4_request",
+            self.access_key, date_stamp, region
+        );
+
+        // 构建 URL（使用 virtual-hosted-style）
+        let host = format!("{}.{}", self.bucket_name, endpoint_host);
+        let canonical_uri = format!("/{}", urlencoding::encode(key));
+
+        // 构建查询参数（按字母顺序排序）
+        let mut query_params = vec![
+            ("x-oss-credential", urlencoding::encode(&credential).to_string()),
+            ("x-oss-date", date_time.clone()),
+            ("x-oss-expires", expires_in.to_string()),
+            ("x-oss-signature-version", "OSS4-HMAC-SHA256".to_string()),
+        ];
+        query_params.sort_by(|a, b| a.0.cmp(&b.0));
+
+        // 构建 canonical query string
+        let canonical_query_string = query_params
+            .iter()
+            .map(|(k, v)| format!("{}={}", k, v))
+            .collect::<Vec<_>>()
+            .join("&");
+
+        // 构建 canonical request
+        // 注意：OSS 预签名 URL 的 canonical request 格式与普通请求不同
+        // 格式：HTTP-Verb\nCanonical-URI\nCanonical-Query-String\n\n\nUNSIGNED-PAYLOAD
+        let canonical_request = format!(
+            "GET\n{}\n{}\n\n\nUNSIGNED-PAYLOAD",
+            canonical_uri, canonical_query_string
+        );
+
+        // 计算 canonical request 的 SHA256
+        let mut hasher = Sha256::new();
+        hasher.update(canonical_request.as_bytes());
+        let canonical_request_hash = hex::encode(hasher.finalize());
+
+        // 构建 string to sign
+        let scope = format!("{}/{}/oss/aliyun_v4_request", date_stamp, region);
+        let string_to_sign = format!(
+            "OSS4-HMAC-SHA256\n{}\n{}\n{}",
+            date_time, scope, canonical_request_hash
+        );
+
+        // 计算签名
+        type HmacSha256 = Hmac<Sha256>;
+
+        let k_date = HmacSha256::new_from_slice(format!("aliyun_v4{}", self.secret_key).as_bytes())
+            .map_err(|e| e.to_string())?
+            .chain_update(date_stamp.as_bytes())
+            .finalize()
+            .into_bytes();
+
+        let k_region = HmacSha256::new_from_slice(&k_date)
+            .map_err(|e| e.to_string())?
+            .chain_update(region.as_bytes())
+            .finalize()
+            .into_bytes();
+
+        let k_service = HmacSha256::new_from_slice(&k_region)
+            .map_err(|e| e.to_string())?
+            .chain_update(b"oss")
+            .finalize()
+            .into_bytes();
+
+        let k_signing = HmacSha256::new_from_slice(&k_service)
+            .map_err(|e| e.to_string())?
+            .chain_update(b"aliyun_v4_request")
+            .finalize()
+            .into_bytes();
+
+        let signature = HmacSha256::new_from_slice(&k_signing)
+            .map_err(|e| e.to_string())?
+            .chain_update(string_to_sign.as_bytes())
+            .finalize()
+            .into_bytes();
+
+        let signature_hex = hex::encode(signature);
+
+        // 构建最终 URL
+        let final_url = format!(
+            "https://{}{}?{}&x-oss-signature={}",
+            host, canonical_uri, canonical_query_string, signature_hex
+        );
+
+        Ok(final_url)
+    }
+
+    pub async fn get_presigned_url(&self, key: &str, expires_in: u64) -> Result<String, String> {
+        // 判断是否是 OSS（通过 endpoint 是否包含 "aliyuncs.com"）
+        let is_oss = self.endpoint.as_ref().map_or(false, |ep| ep.contains("aliyuncs.com"));
+
+        if is_oss {
+            // OSS 使用自定义的签名算法
+            self.generate_oss_presigned_url(key, expires_in)
+        } else {
+            // R2 使用 AWS SDK 的预签名 URL
+            let presigning_config = aws_sdk_s3::presigning::PresigningConfig::builder()
+                .expires_in(std::time::Duration::from_secs(expires_in))
+                .build()
+                .map_err(|e| e.to_string())?;
+
+            let presigned_request = self
+                .client
+                .get_object()
+                .bucket(&self.bucket_name)
+                .key(key)
+                .presigned(presigning_config)
+                .await
+                .map_err(|e| e.to_string())?;
+
+            Ok(presigned_request.uri().to_string())
+        }
     }
 }
 

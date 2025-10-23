@@ -1020,8 +1020,10 @@ checksum = "1a7964611d71df112cb1730f2ee67324fcf4d0fc6606acbbe9bfe06df124637c"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
+ "js-sys",
  "num-traits",
  "serde",
+ "wasm-bindgen",
  "windows-link",
 ]
 
@@ -4278,14 +4280,18 @@ dependencies = [
  "aws-sdk-s3",
  "aws-smithy-runtime",
  "base64 0.22.1",
+ "chrono",
  "dashmap",
  "futures",
+ "hex",
+ "hmac",
  "hyper 0.14.32",
  "hyper-proxy",
  "mime_guess",
  "once_cell",
  "serde",
  "serde_json",
+ "sha2",
  "sysproxy",
  "tauri",
  "tauri-build",
@@ -4296,6 +4302,7 @@ dependencies = [
  "tauri-plugin-single-instance",
  "tokio",
  "tokio-util",
+ "urlencoding",
  "uuid",
 ]
 

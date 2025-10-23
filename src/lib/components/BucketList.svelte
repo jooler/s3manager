@@ -45,37 +45,60 @@
         bucketId = buckets[0].id;
       }
 
-      globalState.activeSelectedBucketId = bucketId;
-
-      // 同时更新 selectedBucket 以保持兼容性
+      // 找到存储桶对象
       const bucket = buckets.find((b) => b.id === bucketId);
       if (bucket) {
+        console.log("Initializing with bucket:", {
+          id: bucket.id,
+          name: bucket.bucketName,
+          endpoint: bucket.endpoint,
+        });
+
+        // 先更新 selectedBucket（同步操作）
         globalState.selectedBucket = {
           value: bucket,
           label: bucket.bucketName,
         };
+
+        // 然后更新 activeSelectedBucketId（触发 $effect）
+        globalState.activeSelectedBucketId = bucketId;
       }
     }
   }
 
   async function selectBucket(bucketId: number | undefined) {
     if (!bucketId) return;
+
+    console.log("Selecting bucket:", bucketId);
+
+    // 先找到存储桶对象
+    const bucket = buckets.find((b) => b.id === bucketId);
+    if (!bucket) {
+      console.error("Bucket not found:", bucketId);
+      return;
+    }
+
+    console.log("Found bucket:", {
+      id: bucket.id,
+      name: bucket.bucketName,
+      endpoint: bucket.endpoint,
+      isOSS: bucket.endpoint?.includes("aliyuncs.com"),
+    });
+
+    // 先更新 selectedBucket（同步操作）
+    globalState.selectedBucket = {
+      value: bucket,
+      label: bucket.bucketName,
+    };
+
+    // 然后更新 activeSelectedBucketId（触发 $effect）
     globalState.activeSelectedBucketId = bucketId;
 
-    // 保存上次激活的存储桶 ID
+    // 最后保存到数据库（异步操作，不影响 UI）
     globalState.appSetting.lastActiveBucketId = bucketId;
     const settings = await db.appSettings.get(1);
     if (settings) {
       await db.appSettings.update(1, { lastActiveBucketId: bucketId });
-    }
-
-    // 同时更新 selectedBucket 以保持兼容性
-    const bucket = buckets.find((b) => b.id === bucketId);
-    if (bucket) {
-      globalState.selectedBucket = {
-        value: bucket,
-        label: bucket.bucketName,
-      };
     }
   }
 </script>
