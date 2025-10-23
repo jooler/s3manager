@@ -1,5 +1,5 @@
 {
-  "name": "r2uploader",
+  "name": "s3manager",
   "version": "0.1.1",
   "description": "",
   "type": "module",
@@ -12,7 +12,7 @@
     "tauri": "tauri",
     "format": "prettier --write ./src",
     "backup": "mkdir -p backup && cp ./src-tauri/gen/android/app/build.gradle.kts ./backup/ && cp ./src-tauri/gen/android/app/src/main/AndroidManifest.xml ./backup/",
-    "restore": "mkdir -p ./src-tauri/gen/android/app/src/main/java/cn/zerorust/r2uploader && cp ./backup/build.gradle.kts ./src-tauri/gen/android/app/ && cp ./backup/AndroidManifest.xml ./src-tauri/gen/android/app/src/main/ && if [ ! -f ./src-tauri/gen/android/keystore.properties ]; then echo -e 'password=\\nkeyAlias=upload\\nstoreFile=/home/vihv/upload-keystore.jks' > ./src-tauri/gen/android/keystore.properties; fi",
+    "restore": "mkdir -p ./src-tauri/gen/android/app/src/main/java/cn/zerorust/s3manager && cp ./backup/build.gradle.kts ./src-tauri/gen/android/app/ && cp ./backup/AndroidManifest.xml ./src-tauri/gen/android/app/src/main/ && if [ ! -f ./src-tauri/gen/android/keystore.properties ]; then echo -e 'password=\\nkeyAlias=upload\\nstoreFile=/home/vihv/upload-keystore.jks' > ./src-tauri/gen/android/keystore.properties; fi",
     "restore-win": "powershell -ExecutionPolicy Bypass -File ./restore.ps1"
   },
   "license": "MIT",

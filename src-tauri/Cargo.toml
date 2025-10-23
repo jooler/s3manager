@@ -1,7 +1,7 @@
 [package]
-name = "r2uploader"
+name = "s3manager"
 version = "1.0.3"
-description = "Upload Files to Cloudflare R2"
+description = "S3 Manager - Upload Files to S3 Compatible Storage"
 authors = ["ZeroRust"]
 edition = "2021"
 
@@ -11,7 +11,7 @@ edition = "2021"
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "r2uploader_lib"
+name = "s3manager_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

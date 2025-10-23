@@ -207,7 +207,13 @@
     isChecking = true;
     errorMessage = "";
     try {
-      await invoke("r2_ping", bucket);
+      await invoke("r2_ping", {
+        bucketName: bucket.bucketName,
+        accountId: bucket.accountId,
+        accessKey: bucket.accessKey,
+        secretKey: bucket.secretKey,
+        endpoint: bucket.endpoint || undefined,
+      });
       checkResult = true;
       setAlert("success");
     } catch (e) {

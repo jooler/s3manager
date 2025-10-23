@@ -13,7 +13,11 @@
       "Bash(rm:*)",
       "Bash(git commit:*)",
       "Bash(npx tailwindcss:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(cargo build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

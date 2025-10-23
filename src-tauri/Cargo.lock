@@ -4273,40 +4273,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "r2uploader"
-version = "1.0.3"
-dependencies = [
- "aws-config",
- "aws-sdk-s3",
- "aws-smithy-runtime",
- "base64 0.22.1",
- "chrono",
- "dashmap",
- "futures",
- "hex",
- "hmac",
- "hyper 0.14.32",
- "hyper-proxy",
- "mime_guess",
- "once_cell",
- "serde",
- "serde_json",
- "sha2",
- "sysproxy",
- "tauri",
- "tauri-build",
- "tauri-plugin-clipboard",
- "tauri-plugin-dialog",
- "tauri-plugin-opener",
- "tauri-plugin-os",
- "tauri-plugin-single-instance",
- "tokio",
- "tokio-util",
- "urlencoding",
- "uuid",
-]
-
-[[package]]
 name = "rand"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4812,6 +4778,40 @@ name = "ryu"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28d3b2b1366ec20994f1fd18c3c594f05c5dd4bc44d8bb0c1c632c8d6829481f"
+
+[[package]]
+name = "s3manager"
+version = "1.0.3"
+dependencies = [
+ "aws-config",
+ "aws-sdk-s3",
+ "aws-smithy-runtime",
+ "base64 0.22.1",
+ "chrono",
+ "dashmap",
+ "futures",
+ "hex",
+ "hmac",
+ "hyper 0.14.32",
+ "hyper-proxy",
+ "mime_guess",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sysproxy",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-clipboard",
+ "tauri-plugin-dialog",
+ "tauri-plugin-opener",
+ "tauri-plugin-os",
+ "tauri-plugin-single-instance",
+ "tokio",
+ "tokio-util",
+ "urlencoding",
+ "uuid",
+]
 
 [[package]]
 name = "same-file"

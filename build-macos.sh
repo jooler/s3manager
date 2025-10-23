@@ -1,6 +1,6 @@
 #!/bin/bash
 # 修改应用名、项目路径、证书名称
-APP_NAME="R2Uploader"
+APP_NAME="S3 Manager"
 PROJECT_DIR="/Users/vihv/Code/project/R2Uploader"
 
 APPLE_DISTRIBUTION_CERT="Apple Distribution: Shanghai Zero Rust Software Development Co., Ltd. (BY52T9DUMZ)"

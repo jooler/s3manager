@@ -1,6 +1,6 @@
-# R2Uploader
+# S3 Manager
 
-R2Uploader 是一款易用的文件上传工具，专为多文件和大文件处理而优化，可以将文件轻松上传到 Cloudflare R2 存储。
+S3 Manager 是一款易用的文件上传工具，专为多文件和大文件处理而优化，可以将文件轻松上传到 S3 兼容的存储服务（如 Cloudflare R2、阿里云 OSS 等）。
 
 ## 特性
 

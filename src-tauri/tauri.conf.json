@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "R2Uploader",
+  "productName": "S3 Manager",
   "version": "1.0.4",
-  "identifier": "cn.zerorust.r2uploader",
+  "identifier": "cn.zerorust.s3manager",
   "build": {
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "R2Uploader",
+        "title": "S3 Manager",
         "width": 800,
         "height": 600
       }
