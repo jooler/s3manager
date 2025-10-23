@@ -2,6 +2,10 @@
 
 S3 Manager 是一款易用的 S3 兼容的存储管理工具（目前支持 Cloudflare R2、阿里云 OSS）。
 
+![Screenshot 1](https://github.com/user-attachments/assets/56cd0fa4-ffd1-47fe-9b16-d6621430357a)
+![Screenshot 2](https://github.com/user-attachments/assets/f6a7df5a-93b9-4d61-bcb0-3be0d051eb2f)
+![Screenshot 3](https://github.com/user-attachments/assets/50e083da-4084-4621-b4d4-2d3a26bc2fa8)
+
 ## 注
 - 本项目fork自 https://github.com/jlvihv/R2Uploader ，在其基础上进行了管理能力和操作逻辑的优化
 
