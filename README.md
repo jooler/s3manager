@@ -1,6 +1,9 @@
 # S3 Manager
 
-S3 Manager 是一款易用的文件上传工具，专为多文件和大文件处理而优化，可以将文件轻松上传到 S3 兼容的存储服务（如 Cloudflare R2、阿里云 OSS 等）。
+S3 Manager 是一款易用的 S3 兼容的存储管理工具（目前支持 Cloudflare R2、阿里云 OSS）。
+
+## 注
+- 本项目fork自 https://github.com/jlvihv/R2Uploader ，在其基础上进行了管理能力和操作逻辑的优化
 
 ## 特性
 
@@ -28,10 +31,4 @@ S3 Manager 是一款易用的文件上传工具，专为多文件和大文件处
 ## 构建
 
 1.  使用 `bun tauri build` 命令构建可执行文件。
-2.  或者，您可以从 [release](https://github.com/jlvihv/R2Uploader/releases) 页面下载已预编译好的二进制文件。
-
-## 许可证
-
-R2Uploader 原本是收费软件（2.99 美元），现在开源免费提供。
-
-但 macOS 商店版本仍然收费，因为我需要承担 Apple 开发者计划的年费，不能做赔本买卖😅。感谢您的理解和支持！
+2.  构建后的可执行文件位于 `src-tauri/target/release/bundle` 目录下。
