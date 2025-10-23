@@ -23,6 +23,7 @@
     "@tauri-apps/plugin-opener": "^2.2.6",
     "@tauri-apps/plugin-os": "~2.2.0",
     "@types/canvas-confetti": "^1.9.0",
+    "ali-oss": "^6.23.0",
     "canvas-confetti": "^1.9.3",
     "dexie": "^4.0.11",
     "dompurify": "^3.2.4",

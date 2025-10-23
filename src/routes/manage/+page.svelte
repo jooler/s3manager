@@ -5,6 +5,7 @@
   import { invoke } from "@tauri-apps/api/core";
   import { RefreshCw, Download, Trash2, Copy, Eye } from "lucide-svelte";
   import ImagePreview from "$lib/components/ImagePreview.svelte";
+  import { generateOSSPresignedUrl, isOSSBucket } from "$lib/oss-client";
 
   let files: S3Object[] = $state([]);
   let multipartUploads: MultipartUpload[] = $state([]);
@@ -266,19 +267,29 @@
         key,
         bucketName: bucket.bucketName,
         endpoint: bucket.endpoint,
-        isOSS: bucket.endpoint?.includes("aliyuncs.com"),
+        isOSS: isOSSBucket(bucket),
       });
 
-      // 获取预签名 URL（有效期 1 小时）
-      const presignedUrl = await invoke<string>("r2_get_presigned_url", {
-        bucketName: bucket.bucketName,
-        accountId: bucket.accountId,
-        accessKey: bucket.accessKey,
-        secretKey: bucket.secretKey,
-        key,
-        endpoint: bucket.endpoint || undefined,
-        expiresIn: 3600, // 1 小时
-      });
+      let presignedUrl: string;
+
+      // 判断是 OSS 还是 R2
+      if (isOSSBucket(bucket)) {
+        // 使用 OSS SDK 生成预签名 URL
+        console.log("Using OSS SDK to generate presigned URL");
+        presignedUrl = await generateOSSPresignedUrl(bucket, key, 3600);
+      } else {
+        // 使用后端 Tauri 命令生成 R2 预签名 URL
+        console.log("Using Tauri backend to generate R2 presigned URL");
+        presignedUrl = await invoke<string>("r2_get_presigned_url", {
+          bucketName: bucket.bucketName,
+          accountId: bucket.accountId,
+          accessKey: bucket.accessKey,
+          secretKey: bucket.secretKey,
+          key,
+          endpoint: bucket.endpoint || undefined,
+          expiresIn: 3600, // 1 小时
+        });
+      }
 
       console.log("Generated presigned URL:", presignedUrl);
 

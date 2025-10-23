@@ -706,10 +706,25 @@ impl R2Client {
 
         // 构建 URL（使用 virtual-hosted-style）
         let host = format!("{}.{}", self.bucket_name, endpoint_host);
-        let canonical_uri = format!("/{}", urlencoding::encode(key));
+
+        // 构建 canonical URI
+        // 注意：路径分隔符 / 不应该被编码，只编码每个路径段
+        let canonical_uri = if key.contains('/') {
+            // 如果 key 包含路径分隔符，分别编码每个段
+            let segments: Vec<String> = key
+                .split('/')
+                .map(|segment| urlencoding::encode(segment).to_string())
+                .collect();
+            format!("/{}", segments.join("/"))
+        } else {
+            // 如果没有路径分隔符，直接编码
+            format!("/{}", urlencoding::encode(key))
+        };
 
         // 构建查询参数（按字母顺序排序）
+        // 注意：必须包含 x-oss-additional-headers=host
         let mut query_params = vec![
+            ("x-oss-additional-headers", "host".to_string()),
             ("x-oss-credential", urlencoding::encode(&credential).to_string()),
             ("x-oss-date", date_time.clone()),
             ("x-oss-expires", expires_in.to_string()),
@@ -724,12 +739,17 @@ impl R2Client {
             .collect::<Vec<_>>()
             .join("&");
 
+        // 构建 canonical headers
+        let canonical_headers = format!("host:{}\n", host);
+
+        // 构建 additional headers
+        let additional_headers = "host";
+
         // 构建 canonical request
-        // 注意：OSS 预签名 URL 的 canonical request 格式与普通请求不同
-        // 格式：HTTP-Verb\nCanonical-URI\nCanonical-Query-String\n\n\nUNSIGNED-PAYLOAD
+        // 格式：HTTP-Verb\nCanonical-URI\nCanonical-Query-String\nCanonical-Headers\n\nAdditional-Headers\nUNSIGNED-PAYLOAD
         let canonical_request = format!(
-            "GET\n{}\n{}\n\n\nUNSIGNED-PAYLOAD",
-            canonical_uri, canonical_query_string
+            "GET\n{}\n{}\n{}\n{}\nUNSIGNED-PAYLOAD",
+            canonical_uri, canonical_query_string, canonical_headers, additional_headers
         );
 
         // 计算 canonical request 的 SHA256
