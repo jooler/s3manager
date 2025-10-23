@@ -51,6 +51,7 @@
         secretKey: bucket.secretKey,
         maxKeys: pageSize,
         continuationToken: currentPage === 1 ? undefined : continuationToken,
+        endpoint: bucket.endpoint || undefined,
       });
 
       files = (filesResponse as any).objects.sort(
@@ -65,6 +66,7 @@
         accountId: bucket.accountId,
         accessKey: bucket.accessKey,
         secretKey: bucket.secretKey,
+        endpoint: bucket.endpoint || undefined,
       });
 
       multipartUploads = (uploadsResponse as any).uploads;
@@ -89,6 +91,7 @@
         accessKey: bucket.accessKey,
         secretKey: bucket.secretKey,
         key,
+        endpoint: bucket.endpoint || undefined,
       });
 
       setAlert(t().manage.files.deleteSuccess);
@@ -113,6 +116,7 @@
         secretKey: bucket.secretKey,
         key,
         uploadId,
+        endpoint: bucket.endpoint || undefined,
       });
 
       setAlert(t().manage.multipartUploads.abortSuccess);

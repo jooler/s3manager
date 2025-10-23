@@ -34,6 +34,9 @@ export let en = $state({
 1. Click the "Check" button to verify your bucket connectivity
 2. If the connection test passes, click "Save" to store your configuration`,
     title: "Add Cloudflare R2 Bucket",
+    titleR2: "Add Cloudflare R2 Bucket",
+    titleOSS: "Add Aliyun OSS Bucket",
+    selectBucketType: "Select Storage Type",
     cancel: "Cancel",
     save: "Save",
     addNew: "Add New Bucket",
@@ -47,6 +50,7 @@ export let en = $state({
       accessKey: "Access Key",
       secretKey: "Secret Key",
       customDomain: "Custom Domain, e.g. https://example.com",
+      endpoint: "Endpoint (for S3-compatible services)",
     },
   },
   common: {
@@ -245,6 +249,9 @@ export let zh = $state({
 1. 点击"Check"按钮验证存储桶连接
 2. 连接测试通过后，点击"Save"保存配置`,
     title: "添加 Cloudflare R2 存储桶",
+    titleR2: "添加 Cloudflare R2 存储桶",
+    titleOSS: "添加阿里云 OSS 存储桶",
+    selectBucketType: "选择存储类型",
     cancel: "取消",
     save: "保存",
     addNew: "添加新存储桶",
@@ -257,6 +264,7 @@ export let zh = $state({
       accessKey: "Access Key",
       secretKey: "Secret Key",
       customDomain: "自定义域名，例如 https://example.com",
+      endpoint: "Endpoint（用于 S3 兼容服务）",
     },
   },
   common: {

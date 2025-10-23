@@ -3,13 +3,15 @@ import type { Snippet } from "svelte";
 
 export interface Bucket {
   id?: number;
-  type: "r2" | "s3";
+  type: "r2" | "s3" | "oss";
   bucketName: string;
   accountId: string;
   accessKey: string;
   secretKey: string;
   customDomain: string;
   s3Api?: string;
+  endpoint?: string;
+  region?: string;
   [key: string]: string | number | undefined;
 }
 

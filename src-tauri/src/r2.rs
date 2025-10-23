@@ -36,8 +36,9 @@ pub async fn r2_ping(
     account_id: &str,
     access_key: &str,
     secret_key: &str,
+    endpoint: Option<&str>,
 ) -> Result<(), String> {
-    let client = R2Client::new(bucket_name, account_id, access_key, secret_key, None).await?;
+    let client = R2Client::new_with_endpoint(bucket_name, account_id, access_key, secret_key, None, endpoint).await?;
     client.ping().await
 }
 
@@ -49,10 +50,11 @@ pub async fn r2_upload(
     access_key: &str,
     secret_key: &str,
     domain: Option<&str>,
+    endpoint: Option<&str>,
     files: Vec<File>,
 ) -> Result<(), String> {
     let client =
-        Arc::new(R2Client::new(bucket_name, account_id, access_key, secret_key, domain).await?);
+        Arc::new(R2Client::new_with_endpoint(bucket_name, account_id, access_key, secret_key, domain, endpoint).await?);
 
     for file in files {
         let client = client.clone();
@@ -178,8 +180,9 @@ pub async fn r2_list_objects(
     secret_key: &str,
     max_keys: u32,
     continuation_token: Option<String>,
+    endpoint: Option<&str>,
 ) -> Result<S3ObjectListResponse, String> {
-    let client = R2Client::new(bucket_name, account_id, access_key, secret_key, None).await?;
+    let client = R2Client::new_with_endpoint(bucket_name, account_id, access_key, secret_key, None, endpoint).await?;
     client
         .list_objects(max_keys, continuation_token.as_deref())
         .await
@@ -191,8 +194,9 @@ pub async fn r2_list_multipart_uploads(
     account_id: &str,
     access_key: &str,
     secret_key: &str,
+    endpoint: Option<&str>,
 ) -> Result<MultipartUploadListResponse, String> {
-    let client = R2Client::new(bucket_name, account_id, access_key, secret_key, None).await?;
+    let client = R2Client::new_with_endpoint(bucket_name, account_id, access_key, secret_key, None, endpoint).await?;
     client.list_multipart_uploads().await
 }
 
@@ -203,8 +207,9 @@ pub async fn r2_delete_object(
     access_key: &str,
     secret_key: &str,
     key: &str,
+    endpoint: Option<&str>,
 ) -> Result<(), String> {
-    let client = R2Client::new(bucket_name, account_id, access_key, secret_key, None).await?;
+    let client = R2Client::new_with_endpoint(bucket_name, account_id, access_key, secret_key, None, endpoint).await?;
     client.delete_object(key).await
 }
 
@@ -216,8 +221,9 @@ pub async fn r2_abort_multipart_upload_cmd(
     secret_key: &str,
     key: &str,
     upload_id: &str,
+    endpoint: Option<&str>,
 ) -> Result<(), String> {
-    let client = R2Client::new(bucket_name, account_id, access_key, secret_key, None).await?;
+    let client = R2Client::new_with_endpoint(bucket_name, account_id, access_key, secret_key, None, endpoint).await?;
     client.abort_multipart_upload(key, upload_id).await
 }
 
@@ -229,12 +235,24 @@ pub struct R2Client {
 }
 
 impl R2Client {
+    #[allow(dead_code)]
     pub async fn new(
         bucket_name: &str,
         account_id: &str,
         access_key: &str,
         secret_key: &str,
         domain: Option<&str>,
+    ) -> Result<Self, String> {
+        Self::new_with_endpoint(bucket_name, account_id, access_key, secret_key, domain, None).await
+    }
+
+    pub async fn new_with_endpoint(
+        bucket_name: &str,
+        account_id: &str,
+        access_key: &str,
+        secret_key: &str,
+        domain: Option<&str>,
+        endpoint: Option<&str>,
     ) -> Result<Self, String> {
         println!("new r2 client...");
         // 设置环境变量 AWS_REQUEST_CHECKSUM_CALCULATION
@@ -248,9 +266,16 @@ impl R2Client {
             .read_timeout(Duration::from_secs(30)) // 读取超时 30 秒
             .build();
 
+        // 如果提供了自定义 endpoint，使用它；否则使用 R2 默认 endpoint
+        let endpoint_url = if let Some(ep) = endpoint {
+            ep.to_string()
+        } else {
+            format!("https://{}.r2.cloudflarestorage.com", account_id)
+        };
+
         let mut config_loader = ConfigLoader::default()
             .region(Region::new("auto"))
-            .endpoint_url(format!("https://{}.r2.cloudflarestorage.com", account_id))
+            .endpoint_url(endpoint_url)
             .timeout_config(timeout_config)
             .credentials_provider(credentials);
 

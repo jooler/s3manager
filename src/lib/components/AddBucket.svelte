@@ -14,8 +14,10 @@
   import { onDestroy } from "svelte";
   import { marked } from "marked";
   import DOMPurify from "dompurify";
+  import BucketTypeSelector from "./BucketTypeSelector.svelte";
 
   let showHelp = $state(false);
+  let showTypeSelector = $state(false);
 
   let {
     onclose,
@@ -39,19 +41,26 @@
     secretKey: "",
     customDomain: "",
     s3Api: "",
+    endpoint: "",
   });
 
   $effect(() => {
     if (show) {
-      showModal(content);
-      globalState.modal.onClose = onClose;
-    }
-    if (editBucketId) {
-      db.buckets.get(editBucketId).then((b) => {
-        if (b) {
-          bucket = b;
-        }
-      });
+      // 如果是编辑模式，直接显示表单；否则显示类型选择器
+      if (editBucketId) {
+        db.buckets.get(editBucketId).then((b) => {
+          if (b) {
+            bucket = b;
+            showTypeSelector = false;
+            showModal(content);
+            globalState.modal.onClose = onClose;
+          }
+        });
+      } else {
+        showTypeSelector = true;
+        showModal(content);
+        globalState.modal.onClose = onClose;
+      }
     }
   });
 
@@ -59,6 +68,93 @@
     checkResult = false;
     isChecking = false;
     errorMessage = "";
+  }
+
+  function handleBucketTypeSelect(type: "r2" | "oss") {
+    bucket.type = type;
+    showTypeSelector = false;
+    resetState();
+    updateInputConfigs();
+  }
+
+  function updateInputConfigs() {
+    if (bucket.type === "r2") {
+      inputConfigs.length = 0;
+      inputConfigs.push(
+        {
+          id: "s3Api",
+          label: t().addBucket.labels.s3Api,
+          focused: false,
+          required: false,
+          error: false,
+        },
+        {
+          id: "bucketName",
+          label: t().addBucket.labels.bucketName,
+          focused: false,
+          required: true,
+        },
+        {
+          id: "accountId",
+          label: t().addBucket.labels.accountId,
+          focused: false,
+          required: true,
+        },
+        {
+          id: "accessKey",
+          label: t().addBucket.labels.accessKey,
+          focused: false,
+          required: true,
+        },
+        {
+          id: "secretKey",
+          label: t().addBucket.labels.secretKey,
+          focused: false,
+          required: true,
+        },
+        {
+          id: "customDomain",
+          label: t().addBucket.labels.customDomain,
+          focused: false,
+          required: false,
+        }
+      );
+    } else if (bucket.type === "oss") {
+      inputConfigs.length = 0;
+      inputConfigs.push(
+        {
+          id: "bucketName",
+          label: t().addBucket.labels.bucketName,
+          focused: false,
+          required: true,
+        },
+        {
+          id: "accessKey",
+          label: t().addBucket.labels.accessKey,
+          focused: false,
+          required: true,
+        },
+        {
+          id: "secretKey",
+          label: t().addBucket.labels.secretKey,
+          focused: false,
+          required: true,
+        },
+        {
+          id: "endpoint",
+          label: t().addBucket.labels.endpoint,
+          focused: false,
+          required: true,
+          placeholder: "https://oss-cn-hangzhou.aliyuncs.com",
+        },
+        {
+          id: "customDomain",
+          label: t().addBucket.labels.customDomain,
+          focused: false,
+          required: false,
+        }
+      );
+    }
   }
 
   async function parseS3ApiUrl(url: string) {
@@ -89,45 +185,14 @@
     }
   }
 
-  const inputConfigs = $state([
-    {
-      id: "s3Api",
-      label: t().addBucket.labels.s3Api,
-      focused: false,
-      required: false,
-      error: false,
-    },
-    {
-      id: "bucketName",
-      label: t().addBucket.labels.bucketName,
-      focused: false,
-      required: true,
-    },
-    {
-      id: "accountId",
-      label: t().addBucket.labels.accountId,
-      focused: false,
-      required: true,
-    },
-    {
-      id: "accessKey",
-      label: t().addBucket.labels.accessKey,
-      focused: false,
-      required: true,
-    },
-    {
-      id: "secretKey",
-      label: t().addBucket.labels.secretKey,
-      focused: false,
-      required: true,
-    },
-    {
-      id: "customDomain",
-      label: t().addBucket.labels.customDomain,
-      focused: false,
-      required: false,
-    },
-  ]);
+  let inputConfigs: Array<{
+    id: string;
+    label: string;
+    focused: boolean;
+    required: boolean;
+    error?: boolean;
+    placeholder?: string;
+  }> = $state([]);
 
   async function saveBucket() {
     await db.buckets.put({
@@ -166,9 +231,13 @@
       secretKey: "",
       customDomain: "",
       s3Api: "",
+      endpoint: "",
     };
     show = false;
     editBucketId = undefined;
+    showTypeSelector = false;
+    showHelp = false;
+    inputConfigs.length = 0;
   }
 
   function renderMarkdown(markdown: string) {
@@ -182,7 +251,9 @@
 </script>
 
 {#snippet content()}
-  {#if showHelp}
+  {#if showTypeSelector}
+    <BucketTypeSelector onTypeSelect={handleBucketTypeSelect} />
+  {:else if showHelp}
     <div class="space-y-4">
       <div class="flex items-center gap-2">
         <button class="button" onclick={() => (showHelp = false)}>
@@ -197,7 +268,11 @@
   {:else}
     <div class="space-y-6">
       <div class="flex items-center justify-between">
-        <p>{t().addBucket.title}</p>
+        <p>
+          {bucket.type === "r2"
+            ? t().addBucket.titleR2
+            : t().addBucket.titleOSS}
+        </p>
         <button class="button" onclick={() => (showHelp = true)}>
           <HelpCircle size={20} />
         </button>
@@ -209,6 +284,7 @@
             bind:value={bucket[config.id]}
             type="text"
             id={config.id}
+            placeholder={config.placeholder || ""}
             class="input-field"
             onfocus={() => (config.focused = true)}
             onblur={() => (config.focused = false)}

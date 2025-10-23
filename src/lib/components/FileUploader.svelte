@@ -50,6 +50,7 @@
         accessKey: globalState.selectedBucket.value.accessKey,
         secretKey: globalState.selectedBucket.value.secretKey,
         domain: globalState.selectedBucket.value.customDomain || undefined,
+        endpoint: globalState.selectedBucket.value.endpoint || undefined,
         files: filesToUpload,
       });
 
