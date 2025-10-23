@@ -80,3 +80,29 @@ export interface UploadHistory {
   url: string;
   status: UploadStatus;
 }
+
+export interface S3Object {
+  key: string;
+  size: number;
+  lastModified: number;
+  etag: string;
+}
+
+export interface S3ObjectListResponse {
+  objects: S3Object[];
+  isTruncated: boolean;
+  continuationToken?: string;
+  totalCount: number;
+}
+
+export interface MultipartUpload {
+  key: string;
+  uploadId: string;
+  initiated: number;
+}
+
+export interface MultipartUploadListResponse {
+  uploads: MultipartUpload[];
+  isTruncated: boolean;
+  continuationToken?: string;
+}

@@ -10,7 +10,10 @@
       "Bash(node generate-ico:*)",
       "Bash(del:*)",
       "Bash(git add:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(git commit:*)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []

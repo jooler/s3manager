@@ -3,6 +3,7 @@
   import FileDrag from "$lib/components/FileDrag.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import Sidebar from "$lib/components/Sidebar.svelte";
+  import TabNavigation from "$lib/components/TabNavigation.svelte";
 
   const { children } = $props<{ children: any }>();
   import db from "$lib/db";
@@ -26,7 +27,7 @@
     initAppSettings();
 
     // 监听拖拽事件
-    unlistenDrag = await listen("tauri://drag-enter", async (event) => {
+    unlistenDrag = await listen("tauri://drag-enter", async () => {
       setIsDragging(true);
     });
 
@@ -76,7 +77,10 @@
 
 <div class="flex h-full bg-slate-50 dark:bg-slate-900">
   <Sidebar />
-  <main class="flex-1 overflow-hidden pb-18 md:pb-0">
-    {@render children()}
+  <main class="flex flex-1 flex-col overflow-hidden pb-18 md:pb-0">
+    <TabNavigation />
+    <div class="flex-1 overflow-hidden">
+      {@render children()}
+    </div>
   </main>
 </div>

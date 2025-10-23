@@ -1,4 +1,7 @@
-use crate::typ::{File, UploadHistory, UploadSource, UploadStatus};
+use crate::typ::{
+    File, MultipartUpload, MultipartUploadListResponse, S3Object, S3ObjectListResponse,
+    UploadHistory, UploadSource, UploadStatus,
+};
 use aws_config::timeout::TimeoutConfig;
 use aws_config::ConfigLoader;
 use aws_sdk_s3::config::{Credentials, Region};
@@ -165,6 +168,57 @@ pub async fn r2_cancel_upload(app: AppHandle, file_id: String) -> Result<(), Str
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn r2_list_objects(
+    bucket_name: &str,
+    account_id: &str,
+    access_key: &str,
+    secret_key: &str,
+    max_keys: u32,
+    continuation_token: Option<String>,
+) -> Result<S3ObjectListResponse, String> {
+    let client = R2Client::new(bucket_name, account_id, access_key, secret_key, None).await?;
+    client
+        .list_objects(max_keys, continuation_token.as_deref())
+        .await
+}
+
+#[tauri::command]
+pub async fn r2_list_multipart_uploads(
+    bucket_name: &str,
+    account_id: &str,
+    access_key: &str,
+    secret_key: &str,
+) -> Result<MultipartUploadListResponse, String> {
+    let client = R2Client::new(bucket_name, account_id, access_key, secret_key, None).await?;
+    client.list_multipart_uploads().await
+}
+
+#[tauri::command]
+pub async fn r2_delete_object(
+    bucket_name: &str,
+    account_id: &str,
+    access_key: &str,
+    secret_key: &str,
+    key: &str,
+) -> Result<(), String> {
+    let client = R2Client::new(bucket_name, account_id, access_key, secret_key, None).await?;
+    client.delete_object(key).await
+}
+
+#[tauri::command]
+pub async fn r2_abort_multipart_upload_cmd(
+    bucket_name: &str,
+    account_id: &str,
+    access_key: &str,
+    secret_key: &str,
+    key: &str,
+    upload_id: &str,
+) -> Result<(), String> {
+    let client = R2Client::new(bucket_name, account_id, access_key, secret_key, None).await?;
+    client.abort_multipart_upload(key, upload_id).await
 }
 
 #[derive(Clone)]
@@ -472,6 +526,93 @@ impl R2Client {
         self.client
             .head_bucket()
             .bucket(&self.bucket_name)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub async fn list_objects(
+        &self,
+        max_keys: u32,
+        continuation_token: Option<&str>,
+    ) -> Result<S3ObjectListResponse, String> {
+        let mut request = self
+            .client
+            .list_objects_v2()
+            .bucket(&self.bucket_name)
+            .max_keys(max_keys as i32);
+
+        if let Some(token) = continuation_token {
+            request = request.continuation_token(token);
+        }
+
+        let response = request.send().await.map_err(|e| e.to_string())?;
+
+        let objects: Vec<S3Object> = response
+            .contents()
+            .iter()
+            .map(|obj| S3Object {
+                key: obj.key().unwrap_or("").to_string(),
+                size: obj.size().unwrap_or(0) as u64,
+                last_modified: obj
+                    .last_modified()
+                    .and_then(|dt| {
+                        dt.secs()
+                            .try_into()
+                            .ok()
+                    })
+                    .unwrap_or(0),
+                etag: obj.e_tag().unwrap_or("").to_string(),
+            })
+            .collect();
+
+        Ok(S3ObjectListResponse {
+            objects,
+            is_truncated: response.is_truncated().unwrap_or(false),
+            continuation_token: response.continuation_token().map(|s| s.to_string()),
+            total_count: response.key_count().unwrap_or(0) as usize,
+        })
+    }
+
+    pub async fn list_multipart_uploads(&self) -> Result<MultipartUploadListResponse, String> {
+        let response = self
+            .client
+            .list_multipart_uploads()
+            .bucket(&self.bucket_name)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+
+        let uploads: Vec<MultipartUpload> = response
+            .uploads()
+            .iter()
+            .map(|upload| MultipartUpload {
+                key: upload.key().unwrap_or("").to_string(),
+                upload_id: upload.upload_id().unwrap_or("").to_string(),
+                initiated: upload
+                    .initiated()
+                    .and_then(|dt| {
+                        dt.secs()
+                            .try_into()
+                            .ok()
+                    })
+                    .unwrap_or(0),
+            })
+            .collect();
+
+        Ok(MultipartUploadListResponse {
+            uploads,
+            is_truncated: response.is_truncated().unwrap_or(false),
+            continuation_token: response.key_marker().map(|s| s.to_string()),
+        })
+    }
+
+    pub async fn delete_object(&self, key: &str) -> Result<(), String> {
+        self.client
+            .delete_object()
+            .bucket(&self.bucket_name)
+            .key(key)
             .send()
             .await
             .map_err(|e| e.to_string())?;

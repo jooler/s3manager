@@ -31,6 +31,10 @@ pub fn run() {
             r2::r2_ping,
             r2::r2_upload,
             r2::r2_cancel_upload,
+            r2::r2_list_objects,
+            r2::r2_list_multipart_uploads,
+            r2::r2_delete_object,
+            r2::r2_abort_multipart_upload_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

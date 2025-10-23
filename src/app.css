@@ -4,6 +4,12 @@
   include: modal, toggle;
 }
 
+@theme reference {
+  --color-slate-700: oklch(0.3 0 0);
+  --color-slate-800: oklch(0.25 0 0);
+  --color-slate-900: oklch(0.2 0 0);
+}
+
 html {
   @apply bg-slate-50 dark:bg-slate-900;
   scroll-behavior: smooth;
@@ -31,7 +37,7 @@ body {
 
 ::-webkit-scrollbar-track {
   @apply bg-slate-100 dark:bg-slate-800;
-  background-color: #1e293b;
+  background-color: #3b3b3b00;
   /* slate-800 */
 }
 
@@ -39,7 +45,7 @@ body {
   @apply rounded-full bg-slate-300 dark:bg-slate-600;
   border: 2px solid transparent;
   background-clip: content-box;
-  background-color: #475569;
+  background-color: #656565;
   /* slate-600 */
 }
 

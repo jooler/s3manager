@@ -52,3 +52,37 @@ pub struct UploadHistory {
     pub status: UploadStatus,
     pub timestamp: u64,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct S3Object {
+    pub key: String,
+    pub size: u64,
+    pub last_modified: u64,
+    pub etag: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct S3ObjectListResponse {
+    pub objects: Vec<S3Object>,
+    pub is_truncated: bool,
+    pub continuation_token: Option<String>,
+    pub total_count: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MultipartUpload {
+    pub key: String,
+    pub upload_id: String,
+    pub initiated: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MultipartUploadListResponse {
+    pub uploads: Vec<MultipartUpload>,
+    pub is_truncated: bool,
+    pub continuation_token: Option<String>,
+}

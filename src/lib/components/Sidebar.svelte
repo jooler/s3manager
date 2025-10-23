@@ -3,17 +3,12 @@
   import { t } from "$lib/i18n.svelte";
   import { globalState } from "$lib/store.svelte";
   import {
-    ArrowsUpFromLine,
-    CloudUpload,
     PanelRightClose,
     PanelRightOpen,
     Settings,
-    Crown,
   } from "lucide-svelte";
 
   const links = $derived([
-    { href: "/", icon: CloudUpload, label: t().common.upload },
-    { href: "/transfer", icon: ArrowsUpFromLine, label: t().common.transfer },
     { href: "/setting", icon: Settings, label: t().common.setting },
   ]);
 </script>
