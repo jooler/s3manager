@@ -620,7 +620,7 @@ impl R2Client {
         Ok(S3ObjectListResponse {
             objects,
             is_truncated: response.is_truncated().unwrap_or(false),
-            continuation_token: response.continuation_token().map(|s| s.to_string()),
+            continuation_token: response.next_continuation_token().map(|s| s.to_string()),
             total_count: response.key_count().unwrap_or(0) as usize,
         })
     }

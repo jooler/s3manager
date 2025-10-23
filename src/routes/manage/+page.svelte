@@ -12,15 +12,16 @@
   let loading = $state(false);
   let error: string | null = $state(null);
   let currentPage = $state(1);
-  let pageSize = $state(10);
+  let pageSize = $state(100);
   let totalCount = $state(0);
   let continuationToken: string | undefined = $state();
   let nextContinuationToken: string | undefined = $state();
+  let continuationTokenHistory: (string | undefined)[] = $state([]); // 记录每一页的 token
   let previewImageUrl: string | null = $state(null);
   let previewFileName: string | null = $state(null);
   let lastLoadedBucketId: number | undefined = $state(undefined);
 
-  const pageSizeOptions = [10, 50, 100];
+  const pageSizeOptions = [25, 50, 100, 200, 500];
 
   $effect(() => {
     // 当激活的存储桶改变时，重新加载数据
@@ -54,6 +55,7 @@
       currentPage = 1;
       continuationToken = undefined;
       nextContinuationToken = undefined;
+      continuationTokenHistory = [];
 
       // 记录当前加载的存储桶 ID
       lastLoadedBucketId = globalState.activeSelectedBucketId;
@@ -107,6 +109,13 @@
       );
       totalCount = (filesResponse as any).totalCount;
       nextContinuationToken = (filesResponse as any).continuationToken;
+
+      console.log("Loaded files:", {
+        filesCount: files.length,
+        totalCount,
+        nextContinuationToken,
+        hasNextPage: !!nextContinuationToken,
+      });
 
       // Load multipart uploads
       const uploadsResponse = await invoke("r2_list_multipart_uploads", {
@@ -218,6 +227,9 @@
 
   function nextPage() {
     if (nextContinuationToken) {
+      // 保存当前页的 token 到历史记录
+      continuationTokenHistory.push(continuationToken);
+
       currentPage++;
       continuationToken = nextContinuationToken;
       loadData();
@@ -227,7 +239,10 @@
   function previousPage() {
     if (currentPage > 1) {
       currentPage--;
-      continuationToken = undefined;
+
+      // 从历史记录中恢复上一页的 token
+      continuationToken = continuationTokenHistory.pop();
+
       loadData();
     }
   }
@@ -236,6 +251,7 @@
     pageSize = newSize;
     currentPage = 1;
     continuationToken = undefined;
+    continuationTokenHistory = [];
     loadData();
   }
 
@@ -304,86 +320,6 @@
 </script>
 
 <div class="flex h-full flex-col p-4 gap-4">
-  <!-- Header Section (Fixed Height) -->
-  <div class="flex flex-col gap-4">
-    {#if !globalState.selectedBucket}
-      <div class="rounded-lg bg-yellow-50 p-4 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-        {t().common.noBucketWarning}
-      </div>
-    {:else}
-      <!-- Toolbar -->
-      <div class="flex items-center gap-4 rounded-lg bg-slate-100 p-3 dark:bg-slate-800">
-        <div class="flex items-center gap-2">
-          <label for="page-size" class="text-sm text-slate-600 dark:text-slate-400">
-            {t().manage.toolbar.pageSize}:
-          </label>
-          <select
-            id="page-size"
-            value={pageSize}
-            onchange={(e) => changePageSize(Number(e.currentTarget.value))}
-            class="rounded border border-slate-300 bg-white px-2 py-1 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-          >
-            {#each pageSizeOptions as size}
-              <option value={size}>{size}</option>
-            {/each}
-          </select>
-        </div>
-
-        <button
-          onclick={() => loadData()}
-          disabled={loading}
-          class="ml-auto flex items-center gap-2 rounded bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
-        >
-          <RefreshCw size={16} />
-          {t().manage.toolbar.refresh}
-        </button>
-      </div>
-
-      {#if error}
-        <div class="rounded-lg bg-red-50 p-4 text-red-800 dark:bg-red-900 dark:text-red-200">
-          {error}
-        </div>
-      {/if}
-
-      <!-- Multipart Uploads Section -->
-      {#if multipartUploads.length > 0}
-        <div class="rounded-lg border border-slate-200 dark:border-slate-700">
-          <div class="border-b border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800">
-            <h2 class="font-semibold text-slate-800 dark:text-slate-200">
-              {t().manage.multipartUploads.title}
-            </h2>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
-                <tr>
-                  <th class="px-4 py-2 text-left">{t().manage.multipartUploads.name}</th>
-                  <th class="px-4 py-2 text-left">{t().manage.multipartUploads.initiated}</th>
-                  <th class="px-4 py-2 text-right">{t().manage.multipartUploads.actions}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each multipartUploads as upload}
-                  <tr class="border-b border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
-                    <td class="px-4 py-2">{upload.key}</td>
-                    <td class="px-4 py-2">{formatDate(upload.initiated)}</td>
-                    <td class="px-4 py-2 text-right">
-                      <button
-                        onclick={() => abortUpload(upload.key, upload.uploadId)}
-                        class="text-red-500 hover:text-red-700"
-                      >
-                        {t().manage.multipartUploads.abort}
-                      </button>
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      {/if}
-    {/if}
-  </div>
 
   {#if globalState.selectedBucket}
     <!-- Main Content Area (Flexible Height) -->
@@ -469,31 +405,119 @@
           </div>
         {/if}
       </div>
-
-      <!-- Pagination (Fixed Height) -->
-      <div class="flex items-center justify-between rounded-lg bg-slate-100 p-3 dark:bg-slate-800 flex-shrink-0">
-        <button
-          onclick={previousPage}
-          disabled={currentPage === 1 || loading}
-          class="rounded bg-slate-300 px-3 py-1 text-sm hover:bg-slate-400 disabled:opacity-50 dark:bg-slate-600 dark:hover:bg-slate-500"
-        >
-          {t().manage.pagination.previous}
-        </button>
-
-        <span class="text-sm text-slate-600 dark:text-slate-400">
-          {t().manage.pagination.page} {currentPage}
-        </span>
-
-        <button
-          onclick={nextPage}
-          disabled={!nextContinuationToken || loading}
-          class="rounded bg-slate-300 px-3 py-1 text-sm hover:bg-slate-400 disabled:opacity-50 dark:bg-slate-600 dark:hover:bg-slate-500"
-        >
-          {t().manage.pagination.next}
-        </button>
-      </div>
     </div>
   {/if}
+  <!-- Header Section (Fixed Height) -->
+  <div class="flex flex-col gap-4">
+    {#if !globalState.selectedBucket}
+      <div class="rounded-lg bg-yellow-50 p-4 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+        {t().common.noBucketWarning}
+      </div>
+    {:else}
+      <!-- Toolbar -->
+      <div class="flex items-center justify-between gap-4 rounded-lg bg-slate-100 p-3 dark:bg-slate-800">
+        <!-- 左侧：分页控件 -->
+        <div class="flex items-center gap-3">
+          <!-- 上一页按钮 -->
+          <button
+            onclick={previousPage}
+            disabled={currentPage === 1 || loading}
+            class="flex items-center justify-center w-8 h-8 rounded border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed dark:border-slate-600 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors"
+            aria-label="上一页"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+
+          <!-- 当前页显示 -->
+          <span class="text-sm text-slate-700 dark:text-slate-300 min-w-[60px] text-center">
+            第 {currentPage} 页
+          </span>
+
+          <!-- 下一页按钮 -->
+          <button
+            onclick={nextPage}
+            disabled={!nextContinuationToken || loading}
+            class="flex items-center justify-center w-8 h-8 rounded border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed dark:border-slate-600 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors"
+            aria-label="下一页"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+
+          <!-- 分隔线 -->
+          <div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+
+          <!-- 每页数量选择 -->
+          <select
+            value={pageSize}
+            onchange={(e) => changePageSize(Number(e.currentTarget.value))}
+            class="rounded border border-slate-300 bg-white px-3 py-1 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-white cursor-pointer hover:border-slate-400 dark:hover:border-slate-500 transition-colors"
+          >
+            {#each pageSizeOptions as size}
+              <option value={size}>{size}条/页</option>
+            {/each}
+          </select>
+        </div>
+
+        <!-- 右侧：刷新按钮 -->
+        <button
+          onclick={() => loadData()}
+          disabled={loading}
+          class="flex items-center gap-2 rounded bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
+        >
+          <RefreshCw size={16} />
+          {t().manage.toolbar.refresh}
+        </button>
+      </div>
+
+      {#if error}
+        <div class="rounded-lg bg-red-50 p-4 text-red-800 dark:bg-red-900 dark:text-red-200">
+          {error}
+        </div>
+      {/if}
+
+      <!-- Multipart Uploads Section -->
+      {#if multipartUploads.length > 0}
+        <div class="rounded-lg border border-slate-200 dark:border-slate-700">
+          <div class="border-b border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800">
+            <h2 class="font-semibold text-slate-800 dark:text-slate-200">
+              {t().manage.multipartUploads.title}
+            </h2>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+                <tr>
+                  <th class="px-4 py-2 text-left">{t().manage.multipartUploads.name}</th>
+                  <th class="px-4 py-2 text-left">{t().manage.multipartUploads.initiated}</th>
+                  <th class="px-4 py-2 text-right">{t().manage.multipartUploads.actions}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each multipartUploads as upload}
+                  <tr class="border-b border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
+                    <td class="px-4 py-2">{upload.key}</td>
+                    <td class="px-4 py-2">{formatDate(upload.initiated)}</td>
+                    <td class="px-4 py-2 text-right">
+                      <button
+                        onclick={() => abortUpload(upload.key, upload.uploadId)}
+                        class="text-red-500 hover:text-red-700"
+                      >
+                        {t().manage.multipartUploads.abort}
+                      </button>
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {/if}
+    {/if}
+  </div>
 </div>
 
 {#if previewImageUrl && previewFileName}
