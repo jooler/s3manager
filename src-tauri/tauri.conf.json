@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "S3 Manager",
-        "width": 800,
-        "height": 600
+        "width": 1200,
+        "height": 760
       }
     ],
     "security": {

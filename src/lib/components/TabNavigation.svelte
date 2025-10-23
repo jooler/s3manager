@@ -6,14 +6,11 @@
 
   const tabs = $derived([
     { href: "/manage", icon: Database, label: t().manage.title },
-    { href: "/", icon: CloudUpload, label: t().common.upload },
+    { href: "/upload", icon: CloudUpload, label: t().common.upload },
     { href: "/transfer", icon: ArrowsUpFromLine, label: t().common.transfer },
   ]);
 
   function isActive(href: string): boolean {
-    if (href === "/") {
-      return page.route.id === "/";
-    }
     return page.route.id?.startsWith(href) ?? false;
   }
 </script>

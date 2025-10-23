@@ -7,6 +7,19 @@
 
   let buckets: Bucket[] = $state([]);
 
+  // 根据存储桶类型获取对应的图标路径
+  function getBucketIcon(bucket: Bucket): string {
+    if (bucket.type === "oss") {
+      return "/aliyun.svg";
+    } else if (bucket.type === "r2") {
+      return "/cloudflare.svg";
+    } else if (bucket.type === "s3") {
+      // 如果有AWS S3的图标，可以在这里添加
+      return "/cloudflare.svg"; // 暂时使用cloudflare图标
+    }
+    return "/cloudflare.svg"; // 默认使用cloudflare图标
+  }
+
   onMount(async () => {
     loadBuckets();
   });
@@ -103,7 +116,7 @@
   }
 </script>
 
-<div class="flex flex-col {globalState.appSetting.sidebarCollapsed ? 'gap-1' : 'gap-2'}">
+<div class="flex flex-col gap-1">
   {#if buckets.length === 0}
     <div class="px-2 py-4 text-center text-sm text-slate-500 dark:text-slate-400">
       {t().common.noBucketWarning}
@@ -112,19 +125,26 @@
     {#each buckets as bucket (bucket.id)}
       <button
         onclick={() => selectBucket(bucket.id)}
-        class="flex items-center justify-center rounded-lg transition-colors {globalState.appSetting.sidebarCollapsed
-          ? 'h-10 w-10 text-sm font-bold'
-          : 'gap-2 px-3 py-2 text-left text-sm'} {globalState.activeSelectedBucketId === bucket.id
+        class="flex items-center rounded-lg transition-colors gap-2 px-3 py-2 text-left text-sm {globalState.activeSelectedBucketId === bucket.id
           ? 'bg-cyan-100 text-cyan-900 dark:bg-cyan-900/30 dark:text-cyan-200'
           : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700/50'}"
         title={bucket.bucketName}
       >
         {#if globalState.appSetting.sidebarCollapsed}
-          <span>{bucket.bucketName.charAt(0).toUpperCase()}</span>
+          <img
+            src={getBucketIcon(bucket)}
+            alt={bucket.type}
+            class="h-5 w-5"
+          />
         {:else}
+          <img
+            src={getBucketIcon(bucket)}
+            alt={bucket.type}
+            class="h-5 w-5 flex-shrink-0"
+          />
           <div class="flex-1 truncate font-medium">{bucket.bucketName}</div>
           {#if globalState.activeSelectedBucketId === bucket.id}
-            <div class="h-2 w-2 rounded-full bg-cyan-600 dark:bg-cyan-400"></div>
+            <div class="h-2 w-2 flex-shrink-0 rounded-full bg-cyan-600 dark:bg-cyan-400"></div>
           {/if}
         {/if}
       </button>

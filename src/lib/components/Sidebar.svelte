@@ -61,7 +61,7 @@
       {#each links as { href, icon: Icon, label }}
         <a
           {href}
-          class="nav-link flex-col gap-1"
+          class="nav-link flex-col gap-1 justify-center"
           aria-current={page.route.id === href ? "page" : null}
         >
           <Icon class="size-5" />
@@ -74,7 +74,7 @@
 
 <style lang="postcss">
   .nav-link {
-    @apply flex h-12 cursor-pointer items-center justify-center text-slate-700 transition-colors dark:text-slate-200;
+    @apply flex h-12 cursor-pointer items-center text-slate-700 transition-colors dark:text-slate-200;
   }
 
   .gapped {
