@@ -392,7 +392,7 @@
   {#if globalState.selectedBucket}
     <!-- Main Content Area (Flexible Height) -->
     <div class="flex flex-1 flex-col gap-4 overflow-hidden">
-      <!-- Files Section -->
+      <!-- Combined Files and Multipart Uploads Section -->
       <div class="relative flex flex-1 flex-col gap-4 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
         {#if loading}
           <!-- Loading Overlay -->
@@ -404,35 +404,73 @@
           </div>
         {/if}
 
-        {#if files.length === 0 && !loading}
+        {#if files.length === 0 && multipartUploads.length === 0 && !loading}
           <div class="flex flex-1 items-center justify-center p-4 text-center text-slate-500 dark:text-slate-400">
             {t().manage.files.noFiles}
           </div>
-        {:else if files.length > 0}
+        {:else if files.length > 0 || multipartUploads.length > 0}
           <div class="flex flex-1 flex-col overflow-hidden">
             <!-- Table Header (Fixed) -->
-            <table class="w-full text-sm flex-shrink-0">
+            <table class="w-full text-sm flex-shrink-0 table-fixed">
+              <colgroup>
+                <col style="width: auto;" />
+                <col style="width: 120px;" />
+                <col style="width: 200px;" />
+                <col style="width: 160px;" />
+              </colgroup>
               <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
                 <tr>
                   <th class="px-4 py-2 text-left">{t().manage.files.name}</th>
-                  <th class="px-4 py-2 text-right">{t().manage.files.size}</th>
-                  <th class="px-4 py-2 text-left">{t().manage.files.modified}</th>
-                  <th class="px-4 py-2 text-right">{t().manage.files.actions}</th>
+                  <th class="px-4 py-2 text-right whitespace-nowrap">{t().manage.files.size}</th>
+                  <th class="px-4 py-2 text-left whitespace-nowrap">{t().manage.files.modified}</th>
+                  <th class="px-4 py-2 text-right whitespace-nowrap">{t().manage.files.actions}</th>
                 </tr>
               </thead>
             </table>
 
             <!-- Table Body (Scrollable) -->
             <div class="flex-1 overflow-y-auto">
-              <table class="w-full text-sm">
+              <table class="w-full text-sm table-fixed">
+                <colgroup>
+                  <col style="width: auto;" />
+                  <col style="width: 120px;" />
+                  <col style="width: 200px;" />
+                  <col style="width: 160px;" />
+                </colgroup>
                 <tbody>
+                  <!-- Multipart Uploads (显示在最前面) -->
+                  {#each multipartUploads as upload}
+                    <tr class="border-b border-slate-200 bg-orange-50 hover:bg-orange-100 dark:border-slate-700 dark:bg-orange-900/20 dark:hover:bg-orange-900/30">
+                      <td class="px-4 py-2 font-mono text-xs truncate" title={upload.key}>
+                        <div class="flex items-center gap-2">
+                          <span class="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900/50 dark:text-orange-300">
+                            上传中
+                          </span>
+                          <span>{upload.key}</span>
+                        </div>
+                      </td>
+                      <td class="px-4 py-2 text-right whitespace-nowrap text-slate-400 dark:text-slate-500">-</td>
+                      <td class="px-4 py-2 whitespace-nowrap">{formatDate(upload.initiated)}</td>
+                      <td class="px-4 py-2 text-right whitespace-nowrap">
+                        <button
+                          onclick={() => abortUpload(upload.key, upload.uploadId)}
+                          class="text-red-500 hover:text-red-700"
+                          title={t().manage.multipartUploads.abort}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  {/each}
+
+                  <!-- Files (正常文件列表) -->
                   {#each files as file}
                     <tr class="border-b border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
-                      <td class="px-4 py-2 font-mono text-xs">{file.key}</td>
-                      <td class="px-4 py-2 text-right">{formatSize(file.size)}</td>
-                      <td class="px-4 py-2">{formatDate(file.lastModified)}</td>
-                      <td class="px-4 py-2 text-right">
-                        <div class="flex justify-end gap-2">
+                      <td class="px-4 py-2 font-mono text-xs truncate" title={file.key}>{file.key}</td>
+                      <td class="px-4 py-2 text-right whitespace-nowrap">{formatSize(file.size)}</td>
+                      <td class="px-4 py-2 whitespace-nowrap">{formatDate(file.lastModified)}</td>
+                      <td class="px-4 py-2 text-right whitespace-nowrap">
+                        <div class="flex justify-end gap-2 flex-nowrap">
                           {#if isImageFile(file.key)}
                             <button
                               onclick={() => previewImage(file.key)}
@@ -553,44 +591,6 @@
       {#if error}
         <div class="rounded-lg bg-red-50 p-4 text-red-800 dark:bg-red-900 dark:text-red-200">
           {error}
-        </div>
-      {/if}
-
-      <!-- Multipart Uploads Section -->
-      {#if multipartUploads.length > 0}
-        <div class="rounded-lg border border-slate-200 dark:border-slate-700">
-          <div class="border-b border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800">
-            <h2 class="font-semibold text-slate-800 dark:text-slate-200">
-              {t().manage.multipartUploads.title}
-            </h2>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
-                <tr>
-                  <th class="px-4 py-2 text-left">{t().manage.multipartUploads.name}</th>
-                  <th class="px-4 py-2 text-left">{t().manage.multipartUploads.initiated}</th>
-                  <th class="px-4 py-2 text-right">{t().manage.multipartUploads.actions}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each multipartUploads as upload}
-                  <tr class="border-b border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
-                    <td class="px-4 py-2">{upload.key}</td>
-                    <td class="px-4 py-2">{formatDate(upload.initiated)}</td>
-                    <td class="px-4 py-2 text-right">
-                      <button
-                        onclick={() => abortUpload(upload.key, upload.uploadId)}
-                        class="text-red-500 hover:text-red-700"
-                      >
-                        {t().manage.multipartUploads.abort}
-                      </button>
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
         </div>
       {/if}
     {/if}
